@@ -85,13 +85,17 @@ export function normalizeLayerLoading(layer = {}) {
 function terminalFromParticipantStats(summary, participantIds) {
   if (!participantIds?.length) return null;
   const participants = new Set(participantIds);
-  return summary.records.some(
-    (record) =>
-      participants.has(record.id) &&
-      (record.error || record.unavailable || record.keyRequired),
+  const records = summary.records.filter((record) =>
+    participants.has(record.id),
+  );
+  if (
+    records.some(
+      (record) => (record.error || record.unavailable) && !record.keyRequired,
+    )
   )
-    ? 'error'
-    : null;
+    return 'error';
+  if (records.some((record) => record.keyRequired)) return 'key-required';
+  return null;
 }
 
 /** Aggregate all manager layers without changing their lifecycle authority. */
@@ -195,7 +199,7 @@ export function presentGlobalLoadingStatus(
     summary,
     nowMs,
   );
-  if (['error', 'retry'].includes(loadingPresentation?.state))
+  if (['error', 'retry', 'key-required'].includes(loadingPresentation?.state))
     return loadingPresentation;
   return presentGlobalStatusNotice(notice, nowMs) || loadingPresentation;
 }
@@ -271,17 +275,21 @@ export function reduceTrafficSyncFeedback(
   };
 }
 
-function terminalFromEvent(event) {
+function terminalFromEvent(event, summary) {
   const type = String(event?.type || '');
   if (type === 'visibility-failed' || type === 'refresh-failed' || event?.error)
-    return 'error';
+    return summary?.records.some(
+      (record) => record.id === event?.layerId && record.keyRequired,
+    )
+      ? 'key-required'
+      : 'error';
   if (type === 'visibility-cancelled' || event?.cancelled) return 'cancelled';
   if (type === 'visibility' || type === 'refresh') return 'complete';
   return null;
 }
 
 function mergeTerminalOutcome(current, next) {
-  const severity = { complete: 1, cancelled: 2, error: 3 };
+  const severity = { complete: 1, cancelled: 2, 'key-required': 3, error: 4 };
   if (!next) return current || null;
   if (!current || severity[next] > severity[current]) return next;
   return current;
@@ -305,7 +313,7 @@ export function reduceLoadingFeedback(previous, summary, nowMs, event = null) {
         beginning ? null : state.batchOutcome,
         terminalFromParticipantStats(summary, activeIds),
       ),
-      eventParticipates ? terminalFromEvent(event) : null,
+      eventParticipates ? terminalFromEvent(event, summary) : null,
     );
     return {
       phase: 'loading',
@@ -324,7 +332,7 @@ export function reduceLoadingFeedback(previous, summary, nowMs, event = null) {
       failedEventIds: [
         ...new Set([
           ...(beginning ? [] : state.failedEventIds || []),
-          ...(eventParticipates && terminalFromEvent(event) === 'error'
+          ...(eventParticipates && terminalFromEvent(event, summary) === 'error'
             ? [eventLayerId]
             : []),
         ]),
@@ -342,15 +350,14 @@ export function reduceLoadingFeedback(previous, summary, nowMs, event = null) {
           state.batchOutcome,
           terminalFromParticipantStats(summary, state.activeIds),
         ),
-        eventParticipates ? terminalFromEvent(event) : null,
+        eventParticipates ? terminalFromEvent(event, summary) : null,
       ) || 'complete';
     const wasVisible = state.visible || now >= state.showAt;
     if (!wasVisible && terminal === 'complete')
       return createLoadingFeedbackState();
-    const dwell =
-      terminal === 'error'
-        ? LOADING_FAILURE_DWELL_MS
-        : LOADING_TERMINAL_DWELL_MS;
+    const dwell = ['error', 'key-required'].includes(terminal)
+      ? LOADING_FAILURE_DWELL_MS
+      : LOADING_TERMINAL_DWELL_MS;
     return {
       ...state,
       phase: 'terminal',
@@ -361,7 +368,7 @@ export function reduceLoadingFeedback(previous, summary, nowMs, event = null) {
       failedEventIds: [
         ...new Set([
           ...(state.failedEventIds || []),
-          ...(eventParticipates && terminalFromEvent(event) === 'error'
+          ...(eventParticipates && terminalFromEvent(event, summary) === 'error'
             ? [eventLayerId]
             : []),
         ]),
@@ -383,7 +390,8 @@ export function presentLoadingFeedback(state, summary, nowMs) {
       (record) =>
         record.id !== 'alpr-cameras' &&
         (state?.activeIds || []).includes(record.id) &&
-        (record.error || record.unavailable || record.keyRequired),
+        (record.error || record.unavailable) &&
+        !record.keyRequired,
     ) || (state?.failedEventIds || []).some((id) => id !== 'alpr-cameras');
   if (camera && !summary.active.length && !otherCameraFailure) {
     const seconds = Math.max(
@@ -407,7 +415,8 @@ export function presentLoadingFeedback(state, summary, nowMs) {
       (record) =>
         record.id !== 'military-installations' &&
         (state?.activeIds || []).includes(record.id) &&
-        (record.error || record.unavailable || record.keyRequired),
+        (record.error || record.unavailable) &&
+        !record.keyRequired,
     ) ||
     (state?.failedEventIds || []).some((id) => id !== 'military-installations');
   // Keep the actual retry visible between attempts, without hiding another
@@ -423,6 +432,7 @@ export function presentLoadingFeedback(state, summary, nowMs) {
       complete: 'LOAD COMPLETE',
       cancelled: 'LOAD CANCELLED',
       error: 'LOAD FAILED',
+      'key-required': 'KEY REQUIRED',
     };
     const label =
       state.operation === 'disabling' && state.terminal === 'complete'
@@ -432,7 +442,20 @@ export function presentLoadingFeedback(state, summary, nowMs) {
             state.activeIds[0] === 'military-installations'
           ? 'MAPPED SITES LOADED'
           : labels[state.terminal] || 'LOAD COMPLETE';
-    return { state: state.terminal, label, detail: '' };
+    return {
+      state: state.terminal,
+      label,
+      detail:
+        state.terminal === 'key-required'
+          ? summary.records
+              .filter(
+                (record) =>
+                  state.activeIds?.includes(record.id) && record.keyRequired,
+              )
+              .map((record) => record.label)
+              .join(' · ')
+          : '',
+    };
   }
   const active = summary.active;
   if (active.length === 1 && active[0].cameraRetry && !summary.disabling) {
