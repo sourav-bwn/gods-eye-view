@@ -3,7 +3,7 @@ import { GUIDANCE_STATUSES } from '../loadingFeedback.js';
 /**
  * Normalize heterogeneous layer stats into one honest control-chip state.
  * @param {object|null} stats Layer getStats() result.
- * @returns {'nominal'|'loading'|'degraded'|'stale'|'partial'|'fallback'|'unavailable'} Feed state.
+ * @returns {'nominal'|'loading'|'degraded'|'stale'|'partial'|'fallback'|'key-required'|'unavailable'} Feed state.
  */
 export function layerFeedState(stats = {}) {
   const state = stats || {};
@@ -14,6 +14,7 @@ export function layerFeedState(stats = {}) {
   const hasPriorData = Number(state.count) > 0 || Boolean(state.lastUpdate);
   const presentedError =
     state.error || state.lastError || state.managerRefreshError;
+  if (state.keyRequired === true) return 'key-required';
   if (['unavailable', 'offline', 'down', 'error'].includes(status))
     return 'unavailable';
   if (
