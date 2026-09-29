@@ -313,3 +313,22 @@ test('identity lookup validates its response and honors body-parse cancellation'
     name: 'AbortError',
   });
 });
+
+test('AIS 503 missing-key keeps its transport status instead of throwing', async () => {
+  const source = createAisStreamSource({
+    origin: () => 'http://example.test',
+    fetchImpl: async () => response({ status: 'missing-key', error: 'AISSTREAM_API_KEY is not set', rows: [] }, {}, 503),
+  });
+  const snapshot = await source.getSnapshot();
+  assert.equal(snapshot.transportStatus, 'missing-key');
+  assert.equal(snapshot.records.length, 0);
+  assert.equal(snapshot.status, 503);
+});
+
+test('AIS real 503 failure still rejects the source request', async () => {
+  const source = createAisStreamSource({
+    origin: () => 'http://example.test',
+    fetchImpl: async () => response({ status: 'down', rows: [] }, {}, 503),
+  });
+  await assert.rejects(source.getSnapshot(), /AIS live/);
+});
