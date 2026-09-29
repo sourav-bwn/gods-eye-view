@@ -228,3 +228,17 @@ test('the Recent Imagery readout mounts in its rail body like the weather readou
     globalThis.document = previousDocument;
   }
 });
+
+test('missing AIS key is guidance, not a failed feed, in its layer control', async () => {
+  const { LayerPanel, layerFeedState } = await import('./layerPanel.js');
+  const classes = new Map();
+  const button = { classList: { toggle: (key, value) => classes.set(key, value) }, dataset: {}, setAttribute() {} };
+  const layer = { id: 'ais-live-vessels', name: 'Live Vessels', source: 'AISStream', enabled: true, stats: { keyRequired: true, status: 'unavailable', error: 'AISSTREAM_API_KEY not set', count: 0 } };
+  LayerPanel.prototype._syncToggleButton(button, layer);
+  assert.equal(layerFeedState(layer.stats), 'key-required');
+  assert.equal(button.textContent, 'KEY REQUIRED');
+  assert.equal(button.dataset.feedState, 'key-required');
+  assert.equal(classes.get('feed-key-required'), true);
+  assert.match(LayerPanel.prototype._buildMetaText(layer), /^KEY REQUIRED/);
+  assert.equal(layerFeedState({ status: 'unavailable', error: 'AISStream down', count: 0 }), 'unavailable');
+});
