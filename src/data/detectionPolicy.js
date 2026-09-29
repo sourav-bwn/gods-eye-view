@@ -204,6 +204,13 @@ export function labelBudgetFor(altitudeM, densityPct) {
   return VIEW_SCALE_BUDGETS[scale][stop];
 }
 
+/** Phone-sized maps need only a few ambient text cards at once. Target
+ * brackets and selected contacts remain visible; desktop budgets stay intact. */
+export function viewportLabelBudget(altitudeM, densityPct, viewportWidth) {
+  const budget = labelBudgetFor(altitudeM, densityPct);
+  return viewportWidth > 0 && viewportWidth <= 720 ? Math.min(budget, 4) : budget;
+}
+
 /**
  * Migrate a persisted/legacy mode+density pair into one canonical state.
  * Legacy Panoptic/God intent resolves to Dense even when its historical
