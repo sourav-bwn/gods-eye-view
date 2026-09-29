@@ -223,6 +223,11 @@ test('legacy state migration removes contradictory mode/density pairs', () => {
 test('phone label budget limits ambient text, not desktop or wider layouts', () => {
   assert.equal(viewportLabelBudget(1000, 75, 390), 4);
   assert.equal(viewportLabelBudget(1e9, 0, 390), 4);
-  assert.equal(viewportLabelBudget(1000, 75, 721), labelBudgetFor(1000, 75));
-  assert.equal(viewportLabelBudget(1000, 75, 0), labelBudgetFor(1000, 75));
+  assert.equal(viewportLabelBudget(1000, 75, 721), labelBudgetFor(1000, 75, 1000));
+  assert.equal(viewportLabelBudget(1000, 75, 0), labelBudgetFor(1000, 75, 1000));
+});
+
+test('shared detection label budget stays phone-sized in the actual renderer path', () => {
+  assert.equal(labelBudgetFor(1000, 75, 390), 4);
+  assert.equal(labelBudgetFor(1000, 75, 900), 68);
 });
