@@ -461,9 +461,11 @@ export function initFirstRunExperience({
             // does not decide panel chrome. This first-run click is an explicit
             // visual choice, so reveal the result exactly as the visible
             // Contacts / Space Missions tabs do.
-            styleManager.setPanelCollapsed?.('global-context-panel', false, {
-              explicit: true,
-            });
+            if (globalThis.innerWidth > 720) {
+              styleManager.setPanelCollapsed?.('global-context-panel', false, {
+                explicit: true,
+              });
+            }
           }
           return result;
         },
