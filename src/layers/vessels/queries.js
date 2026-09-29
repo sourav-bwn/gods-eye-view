@@ -507,6 +507,7 @@ export function createQueries({
           ? AIS_FIRST_CONNECT_LABEL
           : state.feed.loadingLabel,
         error: state.feed.error,
+        keyRequired: state.feed.transportStatus === 'missing-key',
         stale: state.feed.stale,
         partial: state.feed.partial,
         status:
