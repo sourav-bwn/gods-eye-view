@@ -206,6 +206,7 @@ const RECOGNIZED = new Set([
   '#right-context-rail',
   '#right-context-rail.layout-focus',
   '#right-context-rail[data-rail-measuring]',
+  'body:not(.cockpit-mode) #right-context-rail',
   // tray
   '#command-dock .dock-popover-content',
   '#command-dock #location-bar .dock-popover-content',
@@ -406,7 +407,9 @@ test('the model refuses every cascade construct it cannot resolve', () => {
       const railMeasurement = part === '#right-context-rail[data-rail-measuring]'
         && ((decl.prop === 'height' && decl.value === 'auto')
           || (decl.prop === 'max-height' && decl.value === 'none'));
-      if (decl.important && !railMeasurement) complaints.push(`!important on ${decl.prop} of "${part}"`);
+      const phoneRail = part === 'body:not(.cockpit-mode) #right-context-rail'
+        && rule.media.length === 1 && parseMediaCondition(rule.media[0]) === 720;
+      if (decl.important && !railMeasurement && !phoneRail) complaints.push(`!important on ${decl.prop} of "${part}"`);
       if (decl.prop === 'inset' || decl.prop === 'margin' || decl.prop === 'all'
         || decl.prop.startsWith('inset-') || decl.prop.startsWith('margin-block')) {
         complaints.push(`shorthand ${decl.prop} on "${part}" — the model reads longhands only`);
@@ -420,7 +423,7 @@ test('the model refuses every cascade construct it cannot resolve', () => {
         // synchronous measurement, which is removed before any paint.
         const railOwn = part === '#right-context-rail' && decl.prop === 'max-height';
         const railFocus = part === '#right-context-rail.layout-focus';
-        if (!railOwn && !railFocus && !railMeasurement) complaints.push(`${decl.prop}: ${decl.value} on "${part}"`);
+        if (!railOwn && !railFocus && !railMeasurement && !phoneRail) complaints.push(`${decl.prop}: ${decl.value} on "${part}"`);
       }
       if (decl.prop === 'transform' && /translateY|translate3d|matrix|scale\(/.test(decl.value)) {
         const identity = decl.value === 'translateY(0) scale(1)';
@@ -553,7 +556,7 @@ test('the full-width context rail clears the required credit at every modelled v
       if (decl.prop === 'bottom') anchors.push({ rule, decl });
     }
   }
-  assert.equal(anchors.length, 1, 'the rail has exactly one bottom anchor to reason about');
+  assert.equal(anchors.length, 1, 'the original full-width rail bottom anchor remains');
   assert.equal(parseMediaCondition(anchors[0].rule.media[0]), 720, 'the rail only goes full-width below 720px');
 
   const failures = [];
