@@ -181,6 +181,14 @@ export function createAisStreamSource({
         { signal, cache: 'no-store' },
         'AIS live',
       );
+      // A missing optional key is configuration guidance, not a failed network
+      // request. Preserve its transport status for the layer's own UI.
+      if (!response.ok && payload?.status === 'missing-key') {
+        return {
+          ...vesselSnapshot({ ...payload, rows: [] }),
+          status: response.status,
+        };
+      }
       if (!response.ok) {
         const error = httpError(response, 'AIS live');
         const reasons = {

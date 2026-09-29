@@ -1691,3 +1691,27 @@ test('vessel selection passes the opaque source reference to optional history', 
     aisLiveVesselsLayer.setSource(createAisStreamSource());
   }
 });
+
+test('HTTP 503 missing-key becomes KEY REQUIRED in actual vessel stats', async () => {
+  const hadWindow = Object.hasOwn(globalThis, 'window');
+  const priorWindow = globalThis.window;
+  const priorFetch = globalThis.fetch;
+  const clock = makeFakeAisRuntime();
+  globalThis.window = { location: { origin: 'http://localhost:4173' } };
+  globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({ status: 'missing-key', error: 'AISSTREAM_API_KEY is not set', rows: [] }) });
+  _setAisRuntimeForTest(clock.runtime);
+  _setVesselStateForTest({ viewer: {}, records: [] });
+  try {
+    _beginAisSessionForTest();
+    await _loadLivePositionsForTest({});
+    const stats = aisLiveVesselsLayer.getStats();
+    assert.equal(stats.transportStatus, 'missing-key');
+    assert.equal(stats.keyRequired, true);
+    assert.equal(stats.status, 'unavailable');
+  } finally {
+    globalThis.fetch = priorFetch;
+    if (hadWindow) globalThis.window = priorWindow; else delete globalThis.window;
+    _setVesselStateForTest({ enabled: false });
+    _setAisRuntimeForTest();
+  }
+});
