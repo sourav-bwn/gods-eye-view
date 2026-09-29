@@ -121,6 +121,10 @@ export class PanelPositionControls {
     // first-run mission card for the one first impression there is. A stored
     // choice still wins in both directions, so anyone who opens it keeps it.
     if (panelId === 'pp-toggles' && stored === null) collapsed = true;
+    // On a phone, start with the map clear. Share links retain their
+    // explicit panel state; local panels can be reopened any time.
+    if (allowStored && window.innerWidth <= 720 &&
+        ['global-context-panel', 'data-panel', 'scene-panel', 'cctv-panel', 'pp-toggles'].includes(panelId)) collapsed = true;
     panelEl.classList.toggle('collapsed', collapsed);
     // Bodies that expand themselves on first appearance must not override a
     // choice the user (or a share link) already made.

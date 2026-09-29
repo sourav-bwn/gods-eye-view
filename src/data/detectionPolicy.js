@@ -198,10 +198,18 @@ export function viewScaleForAltitude(altitudeM) {
 }
 
 /** Resolve the collective text-callout cap for an altitude and density stop. */
-export function labelBudgetFor(altitudeM, densityPct) {
+export function labelBudgetFor(altitudeM, densityPct, viewportWidth = globalThis.innerWidth) {
   const scale = viewScaleForAltitude(altitudeM);
   const stop = canonicalizeDensity(densityPct);
-  return VIEW_SCALE_BUDGETS[scale][stop];
+  const budget = VIEW_SCALE_BUDGETS[scale][stop];
+  return Number(viewportWidth) > 0 && Number(viewportWidth) <= 720
+    ? Math.min(budget, 4) : budget;
+}
+
+/** Phone-sized maps need only a few ambient text cards at once. Target
+ * brackets and selected contacts remain visible; desktop budgets stay intact. */
+export function viewportLabelBudget(altitudeM, densityPct, viewportWidth) {
+  return labelBudgetFor(altitudeM, densityPct, viewportWidth);
 }
 
 /**

@@ -677,7 +677,8 @@
 .data-toggle-btn.feed-stale,
 .data-toggle-btn.feed-partial,
 .data-toggle-btn.feed-fallback,
-.data-toggle-btn.feed-unavailable {
+.data-toggle-btn.feed-unavailable,
+.data-toggle-btn.feed-key-required {
   min-width: 82px;
   letter-spacing: 0.8px;
 }
@@ -1036,4 +1037,10 @@
 }
 .sdr-feed-status[hidden] {
   display: none;
+}
+
+.data-toggle-btn.active.feed-key-required {
+  color: #ffd488;
+  border-color: rgba(255, 212, 136, 0.75);
+  background: rgba(255, 174, 51, 0.1);
 }

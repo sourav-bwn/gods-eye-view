@@ -13,6 +13,7 @@ const FEED_STATE_LABELS = Object.freeze({
   partial: 'PARTIAL',
   fallback: 'FALLBACK',
   unavailable: 'UNAVAILABLE',
+  'key-required': 'KEY REQUIRED',
 });
 
 // Presentation order is independent of catalog registration and startup order.

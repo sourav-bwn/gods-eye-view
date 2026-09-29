@@ -1,0 +1,87 @@
+/* Phone map-first layout: three small launchers, not two full-height rails.
+   A selected panel becomes a bounded sheet, leaving the map and dock usable. */
+@media (max-width: 720px) {
+  body:not(.cockpit-mode) #left-panel-stack,
+  body:not(.cockpit-mode) #right-context-rail {
+    top: 76px !important;
+    bottom: auto !important;
+    max-height: min(68dvh, 510px) !important;
+    width: 145px !important;
+    gap: 5px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  body:not(.cockpit-mode) #left-panel-stack {
+    left: 12px !important;
+    right: auto !important;
+  }
+  body:not(.cockpit-mode) #right-context-rail {
+    right: 12px !important;
+    left: auto !important;
+  }
+  body:not(.cockpit-mode) #left-panel-stack:has(> [data-panel-id]:not(.collapsed):not([hidden])),
+  body:not(.cockpit-mode) #right-context-rail:has(> [data-panel-id]:not(.collapsed):not([hidden])) {
+    width: calc(100vw - 24px) !important;
+    z-index: 120;
+  }
+  body:not(.cockpit-mode) #left-panel-stack > [data-panel-id].collapsed,
+  body:not(.cockpit-mode) #right-context-rail > [data-panel-id].collapsed {
+    width: 100% !important;
+  }
+  body:not(.cockpit-mode) #left-panel-stack > [data-panel-id].collapsed :is(.data-panel-inner, .scene-panel-inner, .cctv-panel-inner),
+  body:not(.cockpit-mode) #right-context-rail > [data-panel-id].collapsed :is(.global-context-panel-inner, .pp-header-row, .weather-panel-inner, .recent-imagery-panel-inner) {
+    box-sizing: border-box;
+    height: 42px;
+    min-height: 42px;
+    padding: 5px 8px;
+  }
+  body:not(.cockpit-mode) #left-panel-stack > [data-panel-id].collapsed .panel-title,
+  body:not(.cockpit-mode) #right-context-rail > [data-panel-id].collapsed .panel-title {
+    font-size: 8px;
+    letter-spacing: .6px;
+  }
+  body:not(.cockpit-mode) #left-panel-stack > [data-panel-id]:not(.collapsed),
+  body:not(.cockpit-mode) #right-context-rail > [data-panel-id]:not(.collapsed):not([hidden]) {
+    width: 100% !important;
+    max-height: min(60dvh, 450px);
+    overflow-y: auto;
+  }
+  /* Keep the other rail's controls reachable after closing this sheet. */
+  body:not(.cockpit-mode):has(#right-context-rail > [data-panel-id]:not(.collapsed):not([hidden])) #left-panel-stack,
+  body:not(.cockpit-mode):has(#left-panel-stack > [data-panel-id]:not(.collapsed):not([hidden])) #right-context-rail {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  #global-loading-status { top: 54px; max-width: 52vw; font-size: 7px; }
+  #intel-hud .hud-top-bar, #intel-hud .hud-bottom-bar { display: none !important; }
+  #global-loading-detail { display: none; }
+  /* The phone's edge launchers and status have the top band; hide the
+     decorative telemetry there rather than letting its lines intersect. */
+  #intel-hud .hud-top-left, #intel-hud .hud-top-right { display: none !important; }
+  #intel-hud .hud-top-left .hud-summary-wrap,
+  #intel-hud .hud-bottom-left, #intel-hud .hud-bottom-right { display: none !important; }
+  #intel-hud .hud-summary-wrap { max-width: calc(100vw - 48px); }
+  #intel-hud .hud-summary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Give provider logos and text an actual two-line layout, with no overlap. */
+  body:not(.ui-clean-view):not(.recording-mode) #cesium-credits,
+  body:not(.ui-clean-view):not(.recording-mode):has(#intel-hud[data-variant='minimal'].active) #cesium-credits {
+    left: 10px;
+    right: 10px;
+    width: auto !important;
+    max-width: none;
+    white-space: normal;
+  }
+  #key-setup-chip:not([hidden]) { bottom: 8.5rem; right: 10px; }
+  #cesium-credits .cesium-widget-credits {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 6px;
+    row-gap: 2px;
+    width: 100%;
+  }
+  #cesium-credits .cesium-credit-logoContainer,
+  #cesium-credits .cesium-credit-textContainer {
+    white-space: normal;
+  }
+}
