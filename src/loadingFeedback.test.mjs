@@ -346,7 +346,8 @@ test('participant stats failure outranks a simultaneous visibility completion', 
     type: 'visibility', layerId: 'ais-live-vessels', enabled: true,
   });
 
-  assert.equal(state.terminal, 'error');
+  assert.equal(state.terminal, 'key-required');
+  assert.equal(presentLoadingFeedback(state, missingKey, 250).label, 'KEY REQUIRED');
 });
 
 test('retains the worst terminal outcome until every concurrent load drains', () => {
@@ -740,4 +741,26 @@ test('ALPR retry success does not inherit its prior error, including turning the
   const stopping = normalizeLayerLoading({ ...camera({ status: 'unavailable', error: 'Old failure' }), lifecycleState: 'disabling' });
   assert.equal(stopping.error, null);
   assert.equal(stopping.unavailable, false);
+});
+
+
+test('keyless fire layer asks for a key instead of reporting a failed feed', () => {
+  const loading = aggregateLayerLoading([{ id: 'local-firms', name: 'Active Fires', lifecycleState: 'enabling' }]);
+  let state = reduceLoadingFeedback(createLoadingFeedbackState(), loading, 0);
+  state = reduceLoadingFeedback(state, loading, 200);
+  const missing = aggregateLayerLoading([{ id: 'local-firms', name: 'Active Fires', enabled: true, stats: { keyRequired: true, status: 'unavailable', error: 'NASA FIRMS key required' } }]);
+  state = reduceLoadingFeedback(state, missing, 250, { type: 'visibility', layerId: 'local-firms' });
+  assert.equal(state.terminal, 'key-required');
+  assert.equal(presentLoadingFeedback(state, missing, 250).label, 'KEY REQUIRED');
+});
+
+
+test('a keyless vessel visibility failure is guidance, not a failed feed', () => {
+  const loading = aggregateLayerLoading([{ id: 'ais-live-vessels', lifecycleState: 'enabling' }]);
+  let state = reduceLoadingFeedback(createLoadingFeedbackState(), loading, 0);
+  state = reduceLoadingFeedback(state, loading, 200);
+  const keyless = aggregateLayerLoading([{ id: 'ais-live-vessels', name: 'AIS Vessels', enabled: true, stats: { keyRequired: true, status: 'unavailable', error: 'AISSTREAM_API_KEY not set' } }]);
+  state = reduceLoadingFeedback(state, keyless, 250, { type: 'visibility-failed', layerId: 'ais-live-vessels', error: new Error('AISSTREAM_API_KEY not set') });
+  assert.equal(state.terminal, 'key-required');
+  assert.equal(presentLoadingFeedback(state, keyless, 250).label, 'KEY REQUIRED');
 });
